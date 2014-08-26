@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:og="http://ogp.me/ns#"
+      xmlns:fb="https://www.facebook.com/2008/fbml">
+<head>
+    <title>"MySQL数据库备份与恢复"</title>
+    <!-- Using the latest rendering mode for IE -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Open Graph tags -->
+
+            <meta property="og:type" content="article"/>
+            <meta property="og:title" content=""MySQL数据库备份与恢复""/>
+            <meta property="og:url" content="http://kevinbin.github.com/mysqlshu-ju-ku-bei-fen-yu-hui-fu.html"/>
+            <meta property="og:description" content="概述 MySQL的多存储引擎架构针对不同的存储引擎有不同的备份方法，数据量的大小和备份目的不同都会影响如何选择备份策略。 备份类型 冷备份、热备份、暖备份。 冷备份是在完全停止数据库进程的情况下备份其数据目录，常在例行维护割接升级可停机的时候采用。 热备份是在数据库服务运行时通过备份工具执行数据备份，是在保证不中断和阻塞读写请求的同时完成数据备份，常用于大数据量的例行备份。 暖备份是MySQL数据库针对非事务型存储引擎表（例如：MyISAM）在不停机的情况下利用mysqlhotcopy工具进行的物理备份，其备份过程中为保证数据一致性会有短暂的读锁，与热备相比会阻塞写请求，故称为暖备。 注：mysqlhotcopy工具在未GA的MySQL 5.7版本将会移除，系统mysql库也会变成InnoDB引擎。 备份方式 逻辑备份和物理备份。 逻辑备份是对数据库对象(如用户、表、存储过程等)利用mysqldump和select outfile工具从数据库中导出最终以CSV或SQL文本形式保存。特点是备份速度较慢、可读性好，便于不同平台迁移。常用于表结构备份，在数据量规模不大时可作为例行备份。 物理备份是对数据库实例在物理磁盘上的数据文件、重做日志、表结构定义文件、配置文件等拷贝。特点是备份速度较快。常用于数据量规模较大的场景下可考虑在线热备。 存储引擎 主要讨论InnoDB和NDB（MySQL Cluster）事务型存储引擎。 对于逻辑备份两者都使用mysqldump或select .. outfile方式导出数据 ..."/>
+
+    <!-- Bootstrap -->
+        <link rel="stylesheet" href="http://kevinbin.github.com/theme/css/bootstrap.min.css" type="text/css"/>
+    <link href="http://kevinbin.github.com/theme/css/font-awesome.min.css" rel="stylesheet">
+    <link href="http://kevinbin.github.com/theme/css/bootstrap-glyphicons.css" rel="stylesheet">
+    <link href="http://kevinbin.github.com/theme/css/pygments.css" rel="stylesheet">
+    <link rel="stylesheet" href="http://kevinbin.github.com/theme/css/style.css" type="text/css"/>
+    <!-- JavaScript plugins (requires jQuery) -->
+    <script src="http://code.jquery.com/jquery.js"></script>
+
+
+</head>
+<body>
+<nav class="navbar navbar-default navbar-fixed-top" role="navigation">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a href="http://kevinbin.github.com" class="navbar-brand">DevOps</a>
+        </div>
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav">
+                        <li><a href="http://kevinbin.github.com/pages/about-me.html">About Me</a></li>
+                        <li class="active">
+                            <a href="http://kevinbin.github.com/category/misc.html">misc</a>
+                        </li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <li><a href="http://kevinbin.github.com/archives.html"><i class="icon-th-list"></i>Archives</a></li>
+            </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+</nav>
+<!-- /.navbar -->
+<div class="container">
+    <div class="row">
+        <div class="col-lg-9">
+    <section id="content">
+        <article>
+            <header class="page-header">
+                <h1>
+                    <a href="http://kevinbin.github.com/mysqlshu-ju-ku-bei-fen-yu-hui-fu.html"
+                       rel="bookmark"
+                       title="Permalink to "MySQL数据库备份与恢复"">
+                        "MySQL数据库备份与恢复"
+                    </a>
+                </h1>
+            </header>
+            <div class="entry-content">
+                <div class="panel">
+                    <div class="panel-body">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="icon-calendar"></i>一 25 八月 2014
+    </span>
+
+
+
+<span class="label label-default">Tags</span>
+	<a href="http://kevinbin.github.com/tag/mysql.html">mysql</a>
+</footer><!-- /.post-info -->                    </div>
+                </div>
+                <h2>概述</h2>
+<p>MySQL的多存储引擎架构针对不同的存储引擎有不同的备份方法，数据量的大小和备份目的不同都会影响如何选择备份策略。</p>
+<h4>备份类型</h4>
+<p>冷备份、热备份、暖备份。</p>
+<p>冷备份是在完全停止数据库进程的情况下备份其数据目录，常在例行维护割接升级可停机的时候采用。</p>
+<p>热备份是在数据库服务运行时通过备份工具执行数据备份，是在保证不中断和阻塞读写请求的同时完成数据备份，常用于大数据量的例行备份。</p>
+<p>暖备份是MySQL数据库针对非事务型存储引擎表（例如：MyISAM）在不停机的情况下利用mysqlhotcopy工具进行的物理备份，其备份过程中为保证数据一致性会有短暂的读锁，与热备相比会阻塞写请求，故称为暖备。</p>
+<p>注：mysqlhotcopy工具在未GA的MySQL 5.7版本将会移除，系统mysql库也会变成InnoDB引擎。</p>
+<h4>备份方式</h4>
+<p>逻辑备份和物理备份。</p>
+<p>逻辑备份是对数据库对象(如用户、表、存储过程等)利用mysqldump和select outfile工具从数据库中导出最终以CSV或SQL文本形式保存。特点是备份速度较慢、可读性好，便于不同平台迁移。常用于表结构备份，在数据量规模不大时可作为例行备份。</p>
+<p>物理备份是对数据库实例在物理磁盘上的数据文件、重做日志、表结构定义文件、配置文件等拷贝。特点是备份速度较快。常用于数据量规模较大的场景下可考虑在线热备。</p>
+<h4>存储引擎</h4>
+<p>主要讨论InnoDB和NDB（MySQL Cluster）事务型存储引擎。</p>
+<p>对于逻辑备份两者都使用mysqldump或select .. outfile方式导出数据。
+对于物理备份InnoDB推荐使用MySQL Enterprise Backup(MEB)进行在线热备；NDB使用    <code>start backup</code>命令执行在线热备。</p>
+<h5>数据量规模</h5>
+<p>通常小于30G的数据可采用逻辑备份方式（mysqldump）在业务闲时备份，备份和恢复一般可以在30分钟内完成；大于30G的数据可考虑物理备份。备份速度还取决于物理磁盘的IO能力。</p>
+<h4>全量备份</h4>
+<p>全量备份是使用mysqldump或MEB工具对全部数据进行备份，数据量越大备份全量备份的间隔越长。</p>
+<h4>增量备份</h4>
+<p>增量备份是利用MySQL的BINLOG所记录数据库在线变更的功能，对其定时备份。任何存储引擎都可以使用此方式。MEB支持针对InnoDB数据页的增量备份，每次只备份变化的数据页，此方式只对InnoDB引擎有效。</p>
+<h2>备份方案</h2>
+<h3>MySQL 单机版</h3>
+<h4>场景1：数据量30G以内</h4>
+<p>备份方式：在线逻辑备份</p>
+<p>备份周期：每天全备+每小时binlog备份</p>
+<p>备份方法：</p>
+<p>全量备份命令</p>
+<div class="highlight"><pre><span class="n">mysqldump</span> <span class="o">-</span><span class="n">uUSER</span> <span class="o">-</span><span class="n">pPASSWORD</span> <span class="o">--</span><span class="n">single</span><span class="o">-</span><span class="n">transaction</span> <span class="n">DATABASE</span> <span class="p">[</span><span class="n">TABLES</span><span class="p">]</span> <span class="o">|</span><span class="n">gzip</span> <span class="o">&gt;</span> <span class="n">DATABASE</span><span class="p">.</span><span class="n">sql</span><span class="p">.</span><span class="n">gz</span>
+</pre></div>
+
+
+<p>Binlog备份脚本</p>
+<table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42</pre></div></td><td class="code"><div class="highlight"><pre><span class="c">#!/bin/bash</span>
+
+<span class="nv">MyUSER</span><span class="o">=</span>        <span class="c"># username</span>
+<span class="nv">MyPASS</span><span class="o">=</span>        <span class="c"># password</span>
+<span class="nv">DATADIR</span><span class="o">=</span>       <span class="c"># data directory</span>
+<span class="nv">BACKDIR</span><span class="o">=</span>       <span class="c"># backup binlog directory</span>
+
+<span class="c"># Linux bin paths, change this if it can not be autodetected via which command</span>
+<span class="nv">MYSQLADMIN</span><span class="o">=</span><span class="s2">&quot;$(which mysqladmin)&quot;</span>
+
+<span class="c"># read binlog index get binlog name</span>
+<span class="nv">$MYSQLADMIN</span> -u<span class="nv">$MyUSER</span> -p<span class="nv">$MyPASS</span> flush-logs
+
+<span class="nv">FILELIST</span><span class="o">=</span><span class="sb">`</span>cat <span class="nv">$DATADIR</span>/mysql-bin.index<span class="sb">`</span>
+
+<span class="nb">cd</span> <span class="nv">$DATADIR</span>
+
+<span class="nv">COUNTER</span><span class="o">=</span>0
+<span class="k">for </span>file in <span class="nv">$FILELIST</span>
+<span class="k">do</span>
+<span class="nv">COUNTER</span><span class="o">=</span><span class="sb">`</span>expr <span class="nv">$COUNTER</span> + 1 <span class="sb">`</span>
+<span class="k">done</span>
+<span class="nv">NextNum</span><span class="o">=</span>0
+<span class="k">for </span>file in  <span class="nv">$FILELIST</span>
+<span class="k">do</span>
+<span class="k">    </span><span class="nv">BASE</span><span class="o">=</span><span class="sb">`</span>basename <span class="nv">$file</span><span class="sb">`</span>
+    <span class="nv">NextNum</span><span class="o">=</span><span class="sb">`</span>expr <span class="nv">$NextNum</span> + 1<span class="sb">`</span>
+    <span class="k">if</span> <span class="o">[</span> <span class="nv">$NextNum</span> -eq <span class="nv">$COUNTER</span> <span class="o">]</span>
+    <span class="k">then</span>
+<span class="k">        </span><span class="nb">echo</span> <span class="s2">&quot;skip lastest&quot;</span>
+    <span class="k">else</span>
+<span class="k">        </span><span class="nv">dest</span><span class="o">=</span><span class="nv">$BACKDIR</span>/<span class="nv">$BASE</span>
+        <span class="k">if</span> <span class="o">[</span> -e <span class="nv">$dest</span> <span class="o">]</span>
+        <span class="k">then</span>
+<span class="k">            </span><span class="nb">echo</span> <span class="s2">&quot;skip exist $BASE&quot;</span>
+        <span class="k">else</span>
+<span class="k">            </span><span class="nb">echo</span> <span class="s2">&quot;copying $BASE&quot;</span>
+            cp <span class="nv">$BASE</span> <span class="nv">$BACKDIR</span>
+        <span class="k">fi</span>
+<span class="k">    fi</span>
+<span class="k">done</span>
+<span class="nb">echo</span> <span class="s2">&quot;Backup MySQL BinLog OK !&quot;</span>
+</pre></div>
+</td></tr></table>
+
+<p>计划任务：</p>
+<div class="highlight"><pre><span class="cp">#crontab -l</span>
+<span class="mi">0</span>   <span class="mi">3</span>   <span class="o">*</span>   <span class="o">*</span>   <span class="o">*</span>   <span class="err">全备</span>
+<span class="mi">1</span>   <span class="o">*</span>   <span class="o">*</span>   <span class="o">*</span>   <span class="o">*</span>   <span class="n">binlog</span><span class="err">备份</span>
+</pre></div>
+
+
+<p>恢复步骤：</p>
+<ol>
+<li>
+<p>选取数据丢失前最近的全备文件</p>
+</li>
+<li>
+<p>暂停业务访问数据库</p>
+</li>
+<li>导入最近的全备文件</li>
+</ol>
+<div class="highlight"><pre><span class="n">gunzip</span> <span class="o">&lt;</span> <span class="n">DATABASE</span><span class="p">.</span><span class="n">sql</span><span class="p">.</span><span class="n">gz</span> <span class="o">|</span> <span class="n">mysql</span> <span class="o">-</span><span class="n">uUSER</span> <span class="o">-</span><span class="n">pPASSWORD</span> <span class="n">DATABASE</span>
+</pre></div>
+
+
+<ol>
+<li>选取全备时间点的binlog备份，若因误操作删除造成数据丢失则stop-datetime为误操作前时间点</li>
+</ol>
+<div class="highlight"><pre><span class="n">mysqlbinlog</span> <span class="o">--</span><span class="n">start</span><span class="o">-</span><span class="n">datetime</span><span class="o">=</span><span class="err">&#39;最近全备时间&#39;</span> <span class="o">--</span><span class="n">stop</span><span class="o">-</span><span class="n">datetime</span><span class="o">=</span><span class="err">&#39;最终误操作前时间点&#39;</span> <span class="n">BINLOG_1</span> <span class="p">..</span> <span class="n">BINLOG_N</span> <span class="o">|</span> <span class="n">mysql</span> <span class="o">-</span><span class="n">uUSER</span> <span class="o">-</span><span class="n">pPASSWORD</span>
+</pre></div>
+
+
+<ol>
+<li>验证数据</li>
+<li>恢复业务访问</li>
+</ol>
+<h4>场景2：数据量大于30G</h4>
+<p>备份方式：在线热备</p>
+<p>备份周期：每周全备+每天增备+每小时binlog备份</p>
+<p>备份方法：使用MEB工具</p>
+<p>全量备份命令</p>
+<div class="highlight"><pre><span class="n">mysqlbackup</span> <span class="o">-</span><span class="n">uUSER</span> <span class="o">-</span><span class="n">pPASSWORD</span> <span class="o">--</span><span class="n">backup</span><span class="o">-</span><span class="n">dir</span><span class="o">=</span><span class="n">FULL_BACKUP_DIR</span><span class="err"> </span><span class="o">--</span><span class="n">with</span><span class="o">-</span><span class="n">timestamp</span> <span class="err"> </span><span class="n">backup</span><span class="o">-</span><span class="n">and</span><span class="o">-</span><span class="n">apply</span><span class="o">-</span><span class="n">log</span>
+</pre></div>
+
+
+<p>增量备份命令</p>
+<div class="highlight"><pre><span class="n">mysqlbackup</span> <span class="o">-</span><span class="n">uUSER</span> <span class="o">-</span><span class="n">pPASSWORD</span> <span class="o">--</span><span class="n">incremental</span><span class="o">-</span><span class="n">base</span><span class="o">=</span><span class="n">history</span><span class="o">:</span><span class="n">last_backup</span> <span class="o">--</span><span class="n">incremental</span><span class="o">-</span><span class="n">backup</span><span class="o">-</span><span class="n">dir</span><span class="o">=</span><span class="n">INCREMENT_BACKUP_DIR</span><span class="err"> </span><span class="o">--</span><span class="n">with</span><span class="o">-</span><span class="n">timestamp</span> <span class="o">--</span><span class="n">incremental</span> <span class="n">backup</span>
+</pre></div>
+
+
+<p>计划任务：</p>
+<div class="highlight"><pre><span class="cp">#crontab -l</span>
+<span class="mi">0</span>   <span class="mi">3</span>   <span class="o">*</span>   <span class="o">*</span>   <span class="mi">0</span>   <span class="err">全备</span>
+<span class="mi">0</span>   <span class="mi">3</span>   <span class="o">*</span>   <span class="o">*</span>   <span class="o">*</span>   <span class="err">增备</span>
+<span class="mi">1</span>   <span class="o">*</span>   <span class="o">*</span>   <span class="o">*</span>   <span class="o">*</span>   <span class="n">binlog</span><span class="err">备份</span>
+</pre></div>
+
+
+<p>恢复步骤：</p>
+<p>MEB数据恢复的流程分成prepare和copy-back 两个部分，prepare部分是将所有的增量备份与全量备份合并，从全备之后的第一个增量备份开始，逐个的将增量备份合并到全量备份，
+然后将合并完成的全量备份copy-back回数据目录完成恢复。</p>
+<ol>
+<li>
+<p>选取数据丢失前最近的全备文件</p>
+</li>
+<li>
+<p>暂停业务访问数据库</p>
+</li>
+<li>从第一个增量备份逐个开始合并到全备</li>
+</ol>
+<div class="highlight"><pre> <span class="n">mysqlbackup</span> <span class="o">-</span><span class="n">uUSER</span> <span class="o">-</span><span class="n">pPASSWORD</span>  <span class="o">--</span><span class="n">incremental</span><span class="o">-</span><span class="n">backup</span><span class="o">-</span><span class="n">dir</span><span class="o">=</span> <span class="n">INCREMENTAL</span><span class="o">-</span><span class="kt">DIR</span><span class="o">-</span><span class="n">N</span> <span class="o">--</span><span class="n">backup</span><span class="o">-</span><span class="n">dir</span><span class="o">=</span><span class="n">FULL_BACKUP_DIR</span> <span class="n">apply</span><span class="o">-</span><span class="n">incremental</span><span class="o">-</span><span class="n">backup</span>
+</pre></div>
+
+
+<ol>
+<li>关闭MySQL实例</li>
+<li>恢复全量备份</li>
+</ol>
+<div class="highlight"><pre><span class="n">mysqlbackup</span> <span class="o">--</span><span class="n">defaults</span><span class="o">-</span><span class="n">file</span><span class="o">=/</span><span class="n">FULL_BACKUP_DIR</span><span class="o">/</span><span class="n">backup</span><span class="o">-</span><span class="n">my</span><span class="p">.</span><span class="n">cnf</span> <span class="o">--</span><span class="n">datadir</span><span class="o">=</span><span class="n">DATA_DIR</span>  <span class="o">--</span><span class="n">backup</span><span class="o">-</span><span class="n">dir</span><span class="o">=</span><span class="n">FULL_BACKUP_DIR</span> <span class="n">copy</span><span class="o">-</span><span class="n">back</span>
+</pre></div>
+
+
+<ol>
+<li>选取全备时间点的binlog备份，若因误操作删除造成数据丢失则stop-datetime为误操作前时间点</li>
+</ol>
+<div class="highlight"><pre><span class="n">mysqlbinlog</span> <span class="o">--</span><span class="n">start</span><span class="o">-</span><span class="n">datetime</span><span class="o">=</span><span class="err">&#39;最近全备时间&#39;</span> <span class="o">--</span><span class="n">stop</span><span class="o">-</span><span class="n">datetime</span><span class="o">=</span><span class="err">&#39;最终误操作前时间点&#39;</span> <span class="n">BINLOG_1</span> <span class="p">..</span> <span class="n">BINLOG_N</span> <span class="o">|</span> <span class="n">mysql</span> <span class="o">-</span><span class="n">uUSER</span> <span class="o">-</span><span class="n">pPASSWORD</span>
+</pre></div>
+
+
+<ol>
+<li>验证数据</li>
+<li>恢复业务访问</li>
+</ol>
+<h3>MySQL Cluster</h3>
+<p>MySQL Cluster原生提供了在线热备命令<code>start_backup</code>,恢复命令<code>ndb_restore</code>。使用原生的备份方式可以在线同时对所有数据节点执行备份操作，也是MySQL Cluster推荐的备份方式。</p>
+<p>MySQL Cluster也支持逻辑备份mysqldump，但为保证备份时数据一致性需进入单用户模式，此模式只有一个SQL节点可以访问数据，所以这种方式会影响业务访问，故不建议使用此方式作为日常的例行备份。</p>
+<p>备份方式：在线热备</p>
+<p>备份方法：使用ndb_mgm客户端工具连接到管理节点执行备份命令</p>
+<div class="highlight"><pre><span class="n">ndb_mgm</span> <span class="o">-</span><span class="n">c</span> <span class="n">connectstring</span> <span class="o">-</span><span class="n">e</span> <span class="err">&#39;</span><span class="n">start</span> <span class="n">backup</span><span class="err">&#39;</span>
+</pre></div>
+
+
+<p>恢复步骤：</p>
+<ol>
+<li>
+<p>选取数据丢失前每个数据节点最近的备份文件，传输到相应数据节点上</p>
+</li>
+<li>
+<p>暂停业务访问数据库</p>
+</li>
+<li>在一个数据节点进行元数据恢复</li>
+</ol>
+<div class="highlight"><pre><span class="n">ndb_restore</span> <span class="o">-</span><span class="n">m</span> <span class="o">-</span><span class="n">r</span> <span class="o">-</span><span class="n">b</span> <span class="n">BACKUP_ID</span> <span class="o">--</span><span class="n">backup_path</span><span class="o">=</span><span class="n">BACKUP_DIR</span> <span class="o">-</span><span class="n">n</span> <span class="n">NODE_ID</span>
+</pre></div>
+
+
+<ol>
+<li>在其余数据节点进行数据恢复</li>
+</ol>
+<div class="highlight"><pre><span class="n">ndb_restore</span> <span class="o">-</span><span class="n">r</span> <span class="o">-</span><span class="n">b</span> <span class="n">BACKUP_ID</span> <span class="o">--</span><span class="n">backup_path</span><span class="o">=</span><span class="n">BACKUP_DIR</span> <span class="o">-</span><span class="n">n</span> <span class="n">NODE_ID</span>
+</pre></div>
+
+
+<ol>
+<li>进入单用户模式,准备进行binlog恢复</li>
+</ol>
+<div class="highlight"><pre><span class="n">ndb_mgm</span> <span class="o">-</span><span class="n">c</span> <span class="n">connectstring</span> <span class="o">-</span><span class="n">e</span> <span class="s">&quot;ENTER SINGLE USER MODE &lt;SQL ID&gt;&quot;</span>        
+</pre></div>
+
+
+<ol>
+<li>选取全备时间点的binlog备份，若因误操作删除造成数据丢失则stop-datetime为误操作前时间点</li>
+</ol>
+<div class="highlight"><pre><span class="n">mysqlbinlog</span> <span class="o">--</span><span class="n">start</span><span class="o">-</span><span class="n">datetime</span><span class="o">=</span><span class="err">&#39;最近全备时间&#39;</span> <span class="o">--</span><span class="n">stop</span><span class="o">-</span><span class="n">datetime</span><span class="o">=</span><span class="err">&#39;最终误操作前时间点&#39;</span> <span class="n">BINLOG_1</span> <span class="p">..</span> <span class="n">BINLOG_N</span> <span class="o">|</span> <span class="n">mysql</span> <span class="o">-</span><span class="n">uUSER</span> <span class="o">-</span><span class="n">pPASSWORD</span>
+</pre></div>
+
+
+<ol>
+<li>验证数据</li>
+<li>恢复业务访问</li>
+</ol>
+<h2>补充</h2>
+<ol>
+<li>本地数据备份完成最好是传输到独立的存储中集中管理</li>
+<li>数据恢复前应写好整个恢复流程，然后按流程一步一步操作</li>
+<li>定期在演练环境验证数据备份有效性</li>
+<li>做好备份成败和磁盘空间监控</li>
+</ol>
+            </div>
+            <!-- /.entry-content -->
+    <hr />
+    <section class="comments" id="comments">
+        <h2>Comments</h2>
+        <div id="disqus_thread"></div>
+        <script type="text/javascript">
+            /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+            var disqus_shortname = 'hongbin'; // required: replace example with your forum shortname
+            var disqus_identifier = 'mysqlshu-ju-ku-bei-fen-yu-hui-fu';
+            var disqus_url = 'http://kevinbin.github.com/mysqlshu-ju-ku-bei-fen-yu-hui-fu.html';
+
+            /* * * DON'T EDIT BELOW THIS LINE * * */
+            (function () {
+                var dsq = document.createElement('script');
+                dsq.type = 'text/javascript';
+                dsq.async = true;
+                dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+                (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+            })();
+        </script>
+        <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by
+            Disqus.</a></noscript>
+        <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+    </section>
+        </article>
+    </section>
+
+        </div>
+        <div class="col-lg-3 well well-sm" id="sidebar">
+<aside>
+    <section>
+        <ul class="list-group list-group-flush">
+
+
+
+            <li class="list-group-item"><a href="http://kevinbin.github.com/tags.html"><h4><i class="icon-tags icon-large"></i>Tags</h4></a></li>
+                <li class="list-group-item tag-1">
+                    <a href="http://kevinbin.github.com/tag/mysql.html">
+                        mysql
+                    </a>
+                </li>
+                <li class="list-group-item tag-4">
+                    <a href="http://kevinbin.github.com/tag/mac.html">
+                        mac
+                    </a>
+                </li>
+        </ul>
+    </section>
+</aside>        </div>
+    </div>
+</div>
+
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="http://kevinbin.github.com/theme/js/bootstrap.min.js"></script>
+
+<!-- Enable responsive features in IE8 with Respond.js (https://github.com/scottjehl/Respond) -->
+<script src="http://kevinbin.github.com/theme/js/respond.min.js"></script>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'hongbin'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function () {
+            var s = document.createElement('script');
+            s.async = true;
+            s.type = 'text/javascript';
+            s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+            (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+        }());
+    </script>
+</body>
+</html>

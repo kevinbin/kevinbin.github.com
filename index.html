@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:og="http://ogp.me/ns#"
+      xmlns:fb="https://www.facebook.com/2008/fbml">
+<head>
+    <title>DevOps</title>
+    <!-- Using the latest rendering mode for IE -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Open Graph tags -->
+
+            <meta property="og:type" content="website"/>
+            <meta property="og:title" content="DevOps"/>
+            <meta property="og:url" content="http://kevinbin.github.com"/>
+            <meta property="og:description" content="DevOps"/>
+
+    <!-- Bootstrap -->
+        <link rel="stylesheet" href="http://kevinbin.github.com/theme/css/bootstrap.min.css" type="text/css"/>
+    <link href="http://kevinbin.github.com/theme/css/font-awesome.min.css" rel="stylesheet">
+    <link href="http://kevinbin.github.com/theme/css/bootstrap-glyphicons.css" rel="stylesheet">
+    <link href="http://kevinbin.github.com/theme/css/pygments.css" rel="stylesheet">
+    <link rel="stylesheet" href="http://kevinbin.github.com/theme/css/style.css" type="text/css"/>
+    <!-- JavaScript plugins (requires jQuery) -->
+    <script src="http://code.jquery.com/jquery.js"></script>
+
+
+</head>
+<body>
+<nav class="navbar navbar-default navbar-fixed-top" role="navigation">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a href="http://kevinbin.github.com" class="navbar-brand">DevOps</a>
+        </div>
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav">
+                        <li><a href="http://kevinbin.github.com/pages/about-me.html">About Me</a></li>
+                        <li >
+                            <a href="http://kevinbin.github.com/category/misc.html">misc</a>
+                        </li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <li><a href="http://kevinbin.github.com/archives.html"><i class="icon-th-list"></i>Archives</a></li>
+            </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+</nav>
+<!-- /.navbar -->
+<div class="container">
+    <div class="row">
+        <div class="col-lg-9">
+            <article>
+                <h2><a href="http://kevinbin.github.com/mysqlshu-ju-ku-bei-fen-yu-hui-fu.html">"MySQL数据库备份与恢复"</a></h2>
+                <div class="summary"><h2>概述</h2>
+<p>MySQL的多存储引擎架构针对不同的存储引擎有不同的备份方法，数据量的大小和备份目的不同都会影响如何选择备份策略。</p>
+<h4>备份类型</h4>
+<p>冷备份、热备份、暖备份。</p>
+<p>冷备份是在完全停止数据库进程的情况下备份其数据目录，常在例行维护割接升级可停机的时候采用。</p>
+<p>热备份是在数据库服务运行时通过备份工具执行数据备份，是在保证不中断和阻塞读写请求的同时完成数据备份，常用于大数据量的例行备份。</p>
+<p>暖备份是MySQL数据库针对非事务型存储引擎表（例如：MyISAM）在不停机的情况下利用mysqlhotcopy工具进行的物理备份，其备份过程中为保证数据一致性会有短暂的读锁，与热备相比会阻塞写请求，故称为暖备。</p>
+<p>注：mysqlhotcopy工具在未GA的MySQL 5.7版本将会移除，系统mysql库也会变成InnoDB引擎。</p>
+<h4>备份方式</h4>
+<p>逻辑备份和物理备份。</p>
+<p>逻辑备份是对数据库对象(如用户、表、存储过程等)利用mysqldump和select outfile工具从数据库中导出最终以CSV或SQL文本形式保存。特点是备份速度较慢、可读性好，便于不同平台迁移。常用于表结构备份，在数据量规模不大时可作为例行备份。</p>
+<p>物理备份是对数据库实例在物理磁盘上的数据文件、重做日志、表结构定义文件、配置文件等拷贝。特点是备份速度较快。常用于数据量规模较大的场景下可考虑在线热备。</p>
+<h4>存储引擎</h4>
+<p>主要讨论InnoDB和NDB（MySQL Cluster）事务型存储引擎。</p>
+<p>对于逻辑备份两者都使用mysqldump或select .. outfile方式导出数据 ...</p>
+                    <a class="btn btn-default btn-xs" href="http://kevinbin.github.com/mysqlshu-ju-ku-bei-fen-yu-hui-fu.html">more ...</a>
+                </div>
+            </article>
+            <hr/>
+            <article>
+                <h2><a href="http://kevinbin.github.com/how-to-easy-collect-mysql-query-log.html">"How to easy collect MySQL query log"</a></h2>
+                <div class="summary"><p>当我们想采集一些查询语句用来分析时，可以利用slow-query-log来记录，与general-log相比它不会记录与查询语句无关的信息，例如：连接信息，登陆等。</p>
+<p>我们通过设置long_query_time=0，能够记录到足够多的查询语句样本，但这在繁忙的线上是会有很大的性能影响，会消耗较多的file IO。long_query_time是一个动态变量可以在不重启MySQL数据库的情况下动态修改它的值，可以记录一段时间再把它恢复原值。虽然操作过程并不复杂，但有一个自动化整个过程的脚本会更好。</p>
+<p><a href="https://github.com/billkarwin/bk-tools/blob/master/full-slow-log/">https://github.com/billkarwin/bk-tools/blob/master/full-slow-log/</a></p>
+<div class="highlight"><pre><span class="err">$</span> <span class="n">full</span><span class="o">-</span><span class="n">slow</span><span class="o">-</span><span class="n">log</span> <span class="p">[</span> <span class="o">-</span><span class="n">v</span> <span class="p">]</span> <span class="p">[</span> <span class="o">-</span><span class="n">s</span> <span class="n">seconds</span> <span class="p">]</span> <span class="p">[</span> <span class="o">-</span><span class="n">c</span> <span class="n">config</span> <span class="p">]</span>
+<span class="err">$</span> <span class="n">full</span><span class="o">-</span><span class="n">slow</span><span class="o">-</span><span class="n">log</span> <span class="o">-</span><span class="n">v</span>
+<span class="n">Discovering</span> <span class="n">slow_query_log</span><span class="o">=</span><span class="mi">1</span>
+<span class="n">Discovering</span> <span class="n">slow_query_log_file</span><span class="o">=</span><span class="n">mysql</span><span class="o">-</span><span class="n">slow</span><span class="p">.</span><span class="n">log</span>
+<span class="n">Discovering</span> <span class="n">long_query_time</span><span class="o">=</span><span class="mf">60.000000</span>
+<span class="n">Setting</span> <span class="n">long_query_time ...</span></pre></div>
+                    <a class="btn btn-default btn-xs" href="http://kevinbin.github.com/how-to-easy-collect-mysql-query-log.html">more ...</a>
+                </div>
+            </article>
+            <hr/>
+            <article>
+                <h2><a href="http://kevinbin.github.com/mac-os-she-zhi-centosan-zhuang-yuan.html">"Mac OS 设置CentOS安装源"</a></h2>
+                <div class="summary"><p>昨天割接遇到了这样尴尬的事.由于服务器是内网环境,没有YUM安装源.要安装软件实在不方便,有光驱却又打不开,拷贝ISO到服务器上又太大,太耗时.本想把自己的MAC当源,但之前没有配置过,时间又紧就没折腾了,老老实实拷ISO吧.</p>
+<p>今天有空琢磨了下原来如此简单.Mac OS有已经装好了Apache 就不用我手动安装了.</p>
+<p>1.开启Apache服务</p>
+<p>打开系统偏好设置 &gt; 共享 &gt; Web 共享</p>
+<p>2.双击CentOS_5.5_Final.ISO文件即挂载镜像,目录在/Volumes/CentOS_5.5_Final
+   3.最后一步设置软连接</p>
+<div class="highlight"><pre><span class="n">sudo</span> <span class="n">ln</span> <span class="o">-</span><span class="n">s</span> <span class="o">/</span><span class="n">Volumes</span><span class="o">/</span><span class="n">CentOS_5</span><span class="mf">.5</span><span class="n">_Final</span> <span class="o">/</span><span class="n">Library</span><span class="o">/</span><span class="n">WebServer</span><span class="o">/</span><span class="n">Documents</span><span class="o">/</span><span class="n">centos5</span>
+</pre></div>
+
+
+<p>现在访问http://localhost/centos5,就可以看到ISO中的内容了.</p>
+<p>测试下能否正常使用.在虚拟机中设置下刚才配置的源.</p>
+<div class="highlight"><pre><span class="n">vi</span> <span class="o">/</span><span class="n">etc ...</span></pre></div>
+                    <a class="btn btn-default btn-xs" href="http://kevinbin.github.com/mac-os-she-zhi-centosan-zhuang-yuan.html">more ...</a>
+                </div>
+            </article>
+            <hr/>
+
+        </div>
+        <div class="col-lg-3 well well-sm" id="sidebar">
+<aside>
+    <section>
+        <ul class="list-group list-group-flush">
+
+
+
+            <li class="list-group-item"><a href="http://kevinbin.github.com/tags.html"><h4><i class="icon-tags icon-large"></i>Tags</h4></a></li>
+                <li class="list-group-item tag-1">
+                    <a href="http://kevinbin.github.com/tag/mysql.html">
+                        mysql
+                    </a>
+                </li>
+                <li class="list-group-item tag-4">
+                    <a href="http://kevinbin.github.com/tag/mac.html">
+                        mac
+                    </a>
+                </li>
+        </ul>
+    </section>
+</aside>        </div>
+    </div>
+</div>
+
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="http://kevinbin.github.com/theme/js/bootstrap.min.js"></script>
+
+<!-- Enable responsive features in IE8 with Respond.js (https://github.com/scottjehl/Respond) -->
+<script src="http://kevinbin.github.com/theme/js/respond.min.js"></script>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'hongbin'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function () {
+            var s = document.createElement('script');
+            s.async = true;
+            s.type = 'text/javascript';
+            s.src = '//' + disqus_shortname + '.disqus.com/count.js';
+            (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+        }());
+    </script>
+</body>
+</html>
